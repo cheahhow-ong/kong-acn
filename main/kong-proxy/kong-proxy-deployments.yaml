@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-proxy
+  # namespace: default
+  # labels:
+  #   app: kong-proxy
+  # annotations:
+  #   external-dns.alpha.kubernetes.io/hostname: " {{ .kongProxyDNS }} "
+  #   service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "app=kong-proxy"
+  #   service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  externalTrafficPolicy: Local
+  type: LoadBalancer
+  ports:
+  - name: kong-proxy-ssl
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  selector:
+    app: kong-proxy
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kong-proxy
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        name: kong-proxy
+        app: kong-proxy
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - kong-proxy
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: kong-proxy
+        image: kong:2.0.3-alpine
+        env:
+        - name: KONG_DATABASE
+          value: postgres
+        - name: KONG_PG_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: kongcreds
+              key: postgresdbname
+        - name: KONG_PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: kongcreds
+              key: username
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kongcreds
+              key: password
+        - name: KONG_PG_HOST
+          value: 10.74.112.3
+        - name: KONG_PG_PORT
+          value: "5432"
+        - name: KONG_PROXY_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_PROXY_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_LISTEN
+          value: 'off'
+        ports:
+        - name: proxy
+          containerPort: 8000
+          protocol: TCP
+        - name: proxy-ssl
+          containerPort: 8443
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - kong
+            - health
+        livenessProbe:
+          exec:
+            command:
+            - kong
+            - health

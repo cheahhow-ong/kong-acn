@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-ingress-controller
+spec:
+  type: ClusterIP
+  ports:
+  - name: kong-ingress
+    port: 10254
+    targetPort: 10254
+    protocol: TCP
+  selector:
+    app: kong-ingress-controller
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: kong-ingress-controller
+  name: kong-ingress-controller
+spec:
+  selector:
+    matchLabels:
+      app: kong-ingress-controller
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        # the returned metrics are related to the kong ingress controller not kong itself
+        prometheus.io/port: "10254"
+        prometheus.io/scrape: "true"
+      labels:
+        app: kong-ingress-controller
+    spec:
+      serviceAccountName: kong-service-account
+      containers:
+      - name: kong-ingress-controller
+        args:
+        - /kong-ingress-controller
+        - --kong-url=http://kong-admin.default:8001
+        - --default-backend-service=default/kong-proxy
+        - --publish-service=default/kong-proxy
+        - --ingress-class=kong
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: kong-docker-kubernetes-ingress-controller.bintray.io/kong-ingress-controller:0.3.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 10254
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 3

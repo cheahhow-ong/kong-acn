@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-admin
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+  - name: kong-admin
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  selector:
+    app: kong-admin
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: kong-admin
+  name: kong-admin
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: kong-admin
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: kong-admin
+    spec:
+      containers:
+      - name: admin-api
+        image: kong:2.0.3-alpine
+        env:
+        - name: KONG_DATABASE
+          value: postgres
+        - name: KONG_PG_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: kongcreds
+              key: postgresdbname
+        - name: KONG_PG_USER
+          valueFrom:
+            secretKeyRef:
+              name: kongcreds
+              key: username
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kongcreds
+              key: password          
+        - name: KONG_PG_HOST
+          value: 10.74.112.3
+        - name: KONG_PG_PORT
+          value: "5432"
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_ADMIN_LISTEN
+          value: 0.0.0.0:8001
+        - name: KONG_PROXY_LISTEN
+          value: 'off'
+        ports:
+        - name: kong-admin-port
+          containerPort: 8001
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /status
+            port: 8001
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 3

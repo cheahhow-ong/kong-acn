@@ -1,0 +1,5 @@
+# env: staging
+# namespace: default
+# postgresDBEndpoint: p28747847906-elefbz@gcp-sa-cloud-sql.iam.gserviceaccount.com
+# kongProxyDNS: endpoint
+#kubetpl render kong-template.yml -i kong-env-staging.yml --syntax go-template
