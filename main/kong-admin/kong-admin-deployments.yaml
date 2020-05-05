@@ -4,11 +4,12 @@ metadata:
   name: kong-admin
   namespace: default
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
   - name: kong-admin
     port: 8001
     targetPort: 8001
+    nodePort: 30100
     protocol: TCP
   selector:
     app: kong-admin
