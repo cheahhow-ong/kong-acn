@@ -1,27 +1,14 @@
-# #For kong ssl termination be sure to copy the tls secret to correct namespace
-# ---
-# # Kong postgres service
-# kind: Service
-# apiVersion: v1
-# metadata:
-#   name: kong-postgres
-#   namespace: default
-# spec:
-#   type: ExternalName
-#   externalName: 10.74.112.3
-
-# ---
 # Migration Job
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: kong-migrations
-  namespace: default
+  namespace: dev
 spec:
   template:
     metadata:
       name: kong-migrations
-      namespace: default
+      namespace: dev
     spec:
       containers:
       - name: kong-migrations
@@ -47,40 +34,8 @@ spec:
               name: kongcreds
               key: password
         - name: KONG_PG_HOST
-          value: 10.74.112.3
+          value: 10.31.0.3
         - name: KONG_PG_PORT
           value: "5432"
         command: [ "/bin/sh", "-c", "kong migrations bootstrap", "--vv" ]
       restartPolicy: Never
-
-
-# apiVersion: batch/v1
-# kind: Job
-# metadata:
-#   name: kong-migrations
-# spec:
-#   template:
-#     metadata:
-#       name: kong-migrations
-#     spec:
-#       initContainers:
-#       - name: wait-for-postgres
-#         image: busybox
-#         env:
-#         - name: KONG_PG_HOST
-#           value: 10.74.112.3
-#         - name: KONG_PG_PORT
-#           value: "5432"
-#         command: [ "/bin/sh", "-c", "until nc -zv $KONG_PG_HOST $KONG_PG_PORT -w1; do echo 'waiting for db'; sleep 1; done" ]
-#       containers:
-#       - name: kong-migrations
-#         image: kong:2.0
-#         env:
-#         - name: KONG_PG_PASSWORD
-#           value: kong
-#         - name: KONG_PG_HOST
-#           value: 10.74.112.3
-#         - name: KONG_PG_PORT
-#           value: "5432"
-#         command: [ "/bin/sh", "-c", "kong migrations bootstrap" ]
-#       restartPolicy: OnFailure

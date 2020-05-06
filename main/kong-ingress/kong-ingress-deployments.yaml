@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kong-ingress-controller
+  namespace: dev
 spec:
   type: ClusterIP
   ports:
@@ -18,6 +19,7 @@ metadata:
   labels:
     app: kong-ingress-controller
   name: kong-ingress-controller
+  namespace: dev
 spec:
   selector:
     matchLabels:
@@ -41,9 +43,9 @@ spec:
       - name: kong-ingress-controller
         args:
         - /kong-ingress-controller
-        - --kong-url=http://kong-admin.default:8001
-        - --default-backend-service=default/kong-proxy
-        - --publish-service=default/kong-proxy
+        - --kong-url=http://kong-admin.dev:8001
+        - --default-backend-service=dev/kong-proxy
+        - --publish-service=dev/kong-proxy
         - --ingress-class=kong
         env:
         - name: POD_NAME

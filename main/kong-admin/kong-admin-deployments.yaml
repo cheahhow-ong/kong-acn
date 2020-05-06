@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kong-admin
-  namespace: default
+  namespace: dev
 spec:
   type: LoadBalancer
   ports:
@@ -20,7 +20,7 @@ metadata:
   labels:
     app: kong-admin
   name: kong-admin
-  namespace: default
+  namespace: dev
 spec:
   selector:
     matchLabels:
@@ -57,7 +57,7 @@ spec:
               name: kongcreds
               key: password          
         - name: KONG_PG_HOST
-          value: 10.74.112.3
+          value: 10.31.0.3
         - name: KONG_PG_PORT
           value: "5432"
         - name: KONG_ADMIN_ACCESS_LOG
