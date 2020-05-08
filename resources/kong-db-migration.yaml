@@ -10,6 +10,10 @@ spec:
       name: kong-migrations
       namespace: dev
     spec:
+      volumes:
+      - name: cloudsql
+        secret:
+          secretName: cloudsql
       containers:
       - name: kong-migrations
         image: kong
@@ -33,9 +37,14 @@ spec:
             secretKeyRef:
               name: kongcreds
               key: password
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
         - name: KONG_PG_HOST
           value: 10.31.0.3
         - name: KONG_PG_PORT
           value: "5432"
+        volumeMounts:
+        - name: cloudsql
+          mountPath: /var/secrets/google
         command: [ "/bin/sh", "-c", "kong migrations bootstrap", "--vv" ]
       restartPolicy: Never

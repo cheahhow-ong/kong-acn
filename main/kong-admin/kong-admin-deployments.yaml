@@ -35,6 +35,10 @@ spec:
       labels:
         app: kong-admin
     spec:
+      volumes:
+      - name: cloudsql
+        secret:
+          secretName: cloudsql
       containers:
       - name: admin-api
         image: kong:2.0.3-alpine
@@ -55,7 +59,9 @@ spec:
           valueFrom:
             secretKeyRef:
               name: kongcreds
-              key: password          
+              key: password
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
         - name: KONG_PG_HOST
           value: 10.31.0.3
         - name: KONG_PG_PORT
@@ -68,6 +74,9 @@ spec:
           value: 0.0.0.0:8001
         - name: KONG_PROXY_LISTEN
           value: 'off'
+        volumeMounts:
+        - name: cloudsql
+          mountPath: /var/secrets/google
         ports:
         - name: kong-admin-port
           containerPort: 8001
